@@ -9,7 +9,7 @@ from optparse import make_option
 from django.conf import settings
 from django.core.management import BaseCommand
 
-from biz.yunmall.utils import Yunmall
+from biz.yunmall.tools.register import YunmallRegister
 
 LOG = logging.getLogger(__name__)
 
@@ -27,18 +27,19 @@ class Command(BaseCommand):
         )
 
     def run(self, invate_code=None):
-        yunmall = Yunmall(invate_code)
-        yunmall.start()
+        yunmall = YunmallRegister(invate_code)
+        return  yunmall.start()
    
     def handle(self, *args, **kwargs):
         begin = datetime.datetime.now()
-        LOG.info("*"*30)
+        LOG.info("%s%s%s", "*"*15, "regiseter.start", "*"*15)
+        succeed = False
         try:
-            self.run(kwargs.get("code", None))
+            succeed = self.run(kwargs.get("code", None))
         except Exception as ex:
-            LOG.exception("yunmall.run raise exception.")
+            LOG.exception("register.run raise exception.")
 
         end = datetime.datetime.now()
-        LOG.info("yunmall.run end, xapply %s seconds",
-                  (end-begin).seconds)
-        LOG.info("#"*30)
+        LOG.info("register.run end, xapply %s seconds, result: %s",
+                  (end-begin).seconds, succeed)
+        LOG.info("%s%s%s", "#"*15, "regiseter.end", "#"*15)

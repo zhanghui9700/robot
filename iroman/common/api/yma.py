@@ -115,21 +115,20 @@ class YmaApi():
             "uid": self.user,
             "mobile": mobile,
         }
+        code = None
         resp = self._get(settings.YMA_HOST, payload=payload)       
         if resp.ok:
             content = resp.content
+            LOG.info("Yma get verify code: %s", content)
             if resp.content.rfind("|") > 0:
                 content = resp.content.split('|')
-                LOG.info("Yma get verify code: %s", content)
                 if len(content) == 2 and content[0] == mobile:
                     mobile, code = content[0], content[1]
-                    return code
                 else:
                     LOG.error("Yma get verify code resp.content format error, "
-                           "content=%s", content)
+                              "content=%s", content)
 
-        # TODO: retry
-        return None
+        return code
         
     def add_to_black(self, mobile=None):
         if not mobile:

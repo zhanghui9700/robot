@@ -1,9 +1,13 @@
 #-*- coding=utf-8 -*-
 
+from datetime import date
+
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 from common.models import BaseModel
+
+from .settings import CONFIG
 
 STEP_CHOICES = (
     (0, _("Error")),
@@ -38,8 +42,15 @@ class Fish(BaseModel):
 
     @classmethod
     def get_invator(cls):
-        if cls.living.filter(child_count__lt=26).exists():
-            return cls.living.filter(child_count__lt=26).first()
+        if cls.living.filter(child_count__lt=26).exclude(code=None).exists():
+            return cls.living.filter(child_count__lt=26).exclude(code=None).first()
+        return None
+
+    @classmethod
+    def get_fresher(cls):
+        if cls.living.filter(code=None).exists():
+            return cls.living.filter(code=None).first()
+        return None
 
     @classmethod
     def mark_excceed(cls, code=None):
@@ -47,6 +58,28 @@ class Fish(BaseModel):
             return
         cls.living.filter(code=code).update(child_count=26)
         ExcceedCode.living.create(code=self.code)
+
+    @classmethod
+    def today_reg_count(cls):
+        today = date.today()
+        return cls.living.filter(create_date__gte=today).count() 
+    
+    @classmethod
+    def new(cls, invate_code, username, pwd, mobile):
+        parent = cls.living.get_or_none(code=invate_code)
+
+        obj = cls.living.create(parent=parent,
+                                mobile=mobile,
+                                username=username,
+                                password=pwd,)
+
+        if parent:
+            parent.child_count = parent.child_count + 1
+            parent.save()
+        return obj
+
+    def __unicode__(self):
+        return u"Code:%s Mobile:%s" % (self.code, self.mobile)
 
     def fake_delete(self):
         self.deleted = True
@@ -60,8 +93,51 @@ class ExcceedCode(BaseModel):
     def exist(cls, code):
         return cls.living.filter(code=code).exists()
 
-
     class Meta:
         db_table = "yunmall_excceed_code"
         verbose_name = _("Excceed Code")
         verbose_name_plural = _("Excced Codes")
+
+
+class ExcceedMobile(BaseModel):
+    mobile = models.CharField(max_length=32, unique=True) 
+
+    @classmethod
+    def exist(cls, mobile):
+        return cls.living.filter(mobile=mobile).exists()
+
+    @classmethod
+    def record(cls, mobile):
+        if cls.living.filter(mobile=mobile).exists():
+            return
+        try:
+            cls.living.create(mobile=mobile)
+        except:
+            pass
+
+    class Meta:
+        db_table = "yunmall_excceed_mobile"
+        verbose_name = _("Excceed Mobile")
+        verbose_name_plural = _("Excced Mobile")
+
+
+class Config(BaseModel):
+    conf = models.CharField(_("Config"), max_length=128,
+                    unique=True, choices=CONFIG.CHOICES)
+    value = models.CharField(_("Value"), max_length=128)
+    description = models.CharField(_("Description"), max_length=128)
+
+    @classmethod
+    def get_conf(cls, conf):
+        if cls.living.filter(conf=conf).exists():
+            return cls.living.filter(conf=conf).first()
+
+        return None
+
+    def __unicode__(self):
+        return u"<%s  %s=%s>" % (self.description, self.conf, self.value)
+
+    class Meta:
+        db_table = "yunmall_config"
+        verbose_name = _("Config")
+        verbose_name_plural = _("Config") 

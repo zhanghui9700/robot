@@ -1,22 +1,30 @@
 #-*- coding=utf-8-*-
 
 import logging
+import os
 import requests
 import random
+import re
 import shutil
+import string
+import time
 
 from django.conf import settings
+from django.utils.translation import ugettext_lazy as _
 
+from common import utils
 from common.utils import DAMA_API as DAMA
 from common.utils import MOBILE_API as MOBILE
 
-from .models import (Fish, ExcceedCode)
-from .settings import VERIFY_CODE, SMS_SEND_CODE
+from biz.yunmall.models import (Fish, ExcceedCode, ExcceedMobile, Config)
+from biz.yunmall.settings import (VERIFY_CODE, SMS_SEND_CODE, REGISTER_CODE,
+                                CONFIG)
+from biz.yunmall.tools.information import YunmallInfo
 
 LOG = logging.getLogger(__name__)
 
 
-class Yunmall():
+class YunmallRegister():
 
     def __init__(self, code=None):
         self.request = requests.Session()
@@ -56,6 +64,8 @@ class Yunmall():
             if cracked:
                 break
 
+        os.remove(img_path)
+
         if not cracked:
             raise Exception("dama api crack image failed.")
 
@@ -92,32 +102,55 @@ class Yunmall():
     def _get_sms_code(self, mobile=None):
         if not mobile:
             return None
-        code = None
+
+        code, sms = None, None
         for i in range(10):
-            code = MOBILE.get_verify_code(mobile)
-            if not code:
+            sms  = MOBILE.get_verify_code(mobile)
+            if not sms:
                 time.sleep(5)
             else:
                 break
+        
+        if sms:
+            m = re.search(settings.SMS_CODE_PATTERN, sms)
+            if m:
+                code = m.group()
+
+        LOG.info("get sms code is %s", sms)
+        return code
 
     def _send_sms_code(self, img_code, mobile):
+        result = False
        	payload = {
             "phone": mobile,
             "smsType": "webRegister",
             "veryCode": img_code
 	    }
-        resp = self.request.post(settings.SEND_SMS_URL, data=payload)
-        if resp.ok:
-            ret = resp.json();
-            LOG.info("send sms code return: %s", ret)
-            # TODO: error code
-            if ret == SMS_SEND_CODE["OK"]:
-                return True
-            if ret == SMS_SEND_CODE["EXIST"]:
-                LOG.info("Mobile %s already exist, add to black.", mobile)
-                MOBILE.add_to_black(mobile) 
+        for i in range(2):
+            time.sleep(i+1)
+            resp = self.request.post(settings.SEND_SMS_URL, data=payload)
+            if resp.ok:
+                ret = resp.json();
+                LOG.info("send %s sms code return: %s", mobile,
+                            SMS_SEND_CODE.DISPLAY.get(ret, ret))
 
-        return False
+                if ret == SMS_SEND_CODE.OK:
+                    result = True
+                    break
+
+                if ret == SMS_SEND_CODE.FREQUENCY:
+                    time.sleep(10)
+
+                if ret == SMS_SEND_CODE.REGISTED:
+                    LOG.info("Mobile %s already exist, add to black.", mobile)
+                    ExcceedMobile.record(mobile=mobile) 
+                    #MOBILE.add_to_black(mobile) 
+                    break
+
+                if ret == SMS_SEND_CODE.IMAGE_ERROR:
+                    time.sleep(1)
+
+        return result
         
     def _check_invate_code(self, code=None):
         if not code:
@@ -167,33 +200,76 @@ class Yunmall():
 
     def _check_verify_img(self, img_code):
         payload = {"v": img_code} 
-        resp = self.request.post(settings.VERIFY_IMAGE_CHECK_URL, data=payload)
-        if resp.ok:
-            ret = resp.json() 
-            LOG.info("check veify image return: %s", ret)
-            # TODO: error code
-            if ret == VERIFY_CODE["OK"]:
-                return True
-            else:
-                return False
+        result = False
+        for i in range(3):
+            resp = self.request.post(settings.VERIFY_IMAGE_CHECK_URL, data=payload)
+            if resp.ok:
+                ret = resp.json() 
+                LOG.debug("check veify image return: %s",
+                            VERIFY_CODE.DISPLAY.get(ret, ret))
+                if ret == VERIFY_CODE.OK:
+                    result = True
+                    break
+                if ret == VERIFY_CODE.FAILED:
+                    pass
 
-    def _register(self):
-        payload = {}
-        self.request.post()
+        return result
+
+    def _register(self, invate_code, mobile, sms_code, img_code):
+        username, pwd = utils.gen_username(), settings.DEFAULT_PWD
+        payload = {
+            "u[password]": pwd,
+            "u[repeat_password]": pwd,
+            "u[phone]": mobile,
+            "u[protocol]": "on",
+            "u[smsCode]": sms_code,
+            "u[veryCode]": img_code,
+            "u[re_phone]": None,
+            "u[re_user_id]": None,
+            "u[username]": username,
+        }
+        header = {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+        }
+        resp = self.request.post(settings.REGISTER_POST_URL, data=payload,
+                                headers=header)
+        LOG.info("register submit payloaa: %s", payload)
+        result = False
+        if resp.ok:
+            ret = resp.json()
+            LOG.info("register submit return is: %s",
+                        REGISTER_CODE.DISPLAY.get(ret, ret))
+            
+            if ret == REGISTER_CODE.SUCCEED:
+                result = Fish.new(invate_code, username, pwd, mobile)
+                MOBILE.add_to_black(mobile) 
+
+            if ret == REGISTER_CODE.FAILED:
+                pass 
+        else:
+            LOG.info("register submit status_code: %s", resp.status_code)
+
+        return result
 
     def _check_day_quota(self):
-        # TODO: day quota check
-        pass
+        conf = Config.get_conf(CONFIG.DAY_QUOTA)
+        if conf and conf.value and conf.value.isdigit():
+            quota = int(conf.value)
+            today = Fish.today_reg_count()
+            result =  today >= quota
+            LOG.debug("System day quota %s, today: %s.", quota, today)
+            return result
+        return False
 
     def _check_paused(self):
-        # TODO: paused by admin
-        pass
-    
-    def start(self): 
-        self._check_paused()
-        self._check_day_quota()
-        self._open_register_page() 
+        conf = Config.get_conf(CONFIG.PAUSED)
+        if conf and conf.value:
+            LOG.debug("System paused value is: %s.", conf.value)
+            return utils.bool_from_string(conf.value)
+        return False
 
+    def _get_invate_code(self):
+        # invate code
         try:
             self.code = self._check_invate_code(code=self.code)
         except Exception as ex:
@@ -201,13 +277,28 @@ class Yunmall():
 
         if not self.code:
             self.code = self._find_invate_code()
+ 
+    def start(self):
+        if self._check_paused():
+            LOG.info("System exit by paused.")
+            return
+
+        if self._check_day_quota():
+            LOG.info("System exit by day quota excceed.")
+            return
+
+        result = False 
+
+        self._open_register_page() 
+        self._get_invate_code()
 
         if not self.code:
             LOG.error("Get invate code failed, exist.")
             return
-
+        
         LOG.info("Try regisete, invate code: %s", self.code)
 
+        # image verify code
         try:
             cracked, img_value = self._crack_verify_img()
         except Exception as ex:
@@ -218,18 +309,40 @@ class Yunmall():
             LOG.error("check verify image failed, exit.")
             return
 
+        # mobile
         try:
             mobiles = self._get_mobiles()
         except Exception as ex:
             LOG.error("get mobiles failed, exit.")
             return
         
+        # sms code
+        sms_code = None
         while mobiles:
             mobile = mobiles.pop() 
-            if self._send_sms_code(img_value, mobile):
-                code = self._get_sms_code(mobile)
-                LOG.info("get sms code is %s", code)
-                # TODO: register
-                #self._register()
 
-        print "end..."
+            if ExcceedMobile.exist(mobile):
+                continue
+
+            if self._send_sms_code(img_value, mobile):
+                sms_code = self._get_sms_code(mobile)
+                if sms_code:
+                    break
+
+        # register submit
+        fresher = None
+        if sms_code:
+            fresher = self._register(self.code, mobile, sms_code, img_value)
+        
+        # register succeed, submit information 
+        if fresher:
+            for i in range(settings.RETRY_COUNT):
+                try:
+                    info = YunmallInfo(self.request, fresher)
+                    if info.start():
+                        result =True
+                        break
+                except:
+                    time.sleep(2)
+
+        return result
