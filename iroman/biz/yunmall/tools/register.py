@@ -224,7 +224,7 @@ class YunmallRegister():
             "u[protocol]": "on",
             "u[smsCode]": sms_code,
             "u[veryCode]": img_code,
-            "u[re_phone]": None,
+            "u[re_phone]": invate_code,
             "u[re_user_id]": None,
             "u[username]": username,
         }

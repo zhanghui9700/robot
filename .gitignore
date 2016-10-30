@@ -11,6 +11,7 @@
 *.pid
 *.sock
 *.orig
+*.out
 *.lock
 build
 dist

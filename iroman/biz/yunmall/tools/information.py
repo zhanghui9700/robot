@@ -22,6 +22,7 @@ from biz.yunmall.settings import (VERIFY_CODE, SMS_SEND_CODE, REGISTER_CODE,
                                 CONFIG, BASIC_INFO_RESULT, PAY_INFO_RESULT)
 
 LOG = logging.getLogger(__name__)
+INFO, PAY = 1, 2
 
 
 class YunmallInfo():
@@ -71,12 +72,18 @@ class YunmallInfo():
 
     def _open_basic_info_page(self):
         page = None
-        for i in range(settings.RETRY_COUNT):
+        i = 0
+        while True:
             page = self.request.get(settings.INFORMATION_URL)
-            LOG.info("Get member/information.html return: %s", page.status_code)
-            if not page.ok:
-                time.sleep(i+1)
+            LOG.info("Get member/information.html, result: %s %s", 
+                            page.url, page.status_code)
+            if page.ok and page.url.find("/member/information.html") >= 0:
+                break
             else:
+                i = i + 1
+                time.sleep(3)
+
+            if i > 20:
                 break
 
         if not page or not page.ok: 
@@ -101,42 +108,6 @@ class YunmallInfo():
 
         return result
 
-    def _info(self, invate_code, mobile, sms_code, img_code):
-        username, pwd = utils.gen_username(), settings.DEFAULT_PWD
-        payload = {
-            "u[password]": pwd,
-            "u[repeat_password]": pwd,
-            "u[phone]": mobile,
-            "u[protocol]": "on",
-            "u[smsCode]": sms_code,
-            "u[veryCode]": img_code,
-            "u[re_phone]": None,
-            "u[re_user_id]": None,
-            "u[username]": username,
-        }
-        header = {
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
-        }
-        resp = self.request.post(settings.REGISTER_POST_URL, data=payload,
-                                headers=header)
-        LOG.info("register submit payloaa: %s", payload)
-        result = False
-        if resp.ok:
-            ret = resp.json()
-            LOG.info("register submit return is: %s",
-                        REGISTER_CODE.DISPLAY.get(ret, ret))
-            
-            if ret == REGISTER_CODE.SUCCEED:
-                result = True
-                Fish.new(invate_code, username, pwd, mobile)
-
-            if ret == REGISTER_CODE.FAILED:
-                pass 
-        else:
-            LOG.info("register submit status_code: %s", resp.status_code)
-
-        return result
-
     def _save_invate_code(self, content):
         soup = BeautifulSoup(content, "lxml")
         #print soup.prettify()
@@ -145,6 +116,8 @@ class YunmallInfo():
         if member:
             member_id = member.find_next_sibling("td")
             if member_id:
+                LOG.info("basic info page find self invate_code: %s",
+                                member_id.string)
                 self.fresher.code = member_id.string
                 self.fresher.save()
 
@@ -166,9 +139,14 @@ class YunmallInfo():
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
         }
         result = False
+
         resp = self.request.post(settings.INFORMATION_URL+"?t=1", data=payload,
-                                headers=header)
-        LOG.debug("submit basic info resp.content: %s", resp.content)
+                            headers=header)
+
+        if resp.url.find("/member/information.html") < 0:
+            LOG.debug("submit basic info post resp.url: %s", resp.url)
+            return result
+
         if resp.ok:
             ret = resp.json()
             LOG.info("submit basic info return is: %s",
@@ -181,9 +159,11 @@ class YunmallInfo():
                 self.fresher.password = new_password
                 self.fresher.step = 2
                 self.fresher.save()
-                return True
+                result = True
+        else:
+            LOG.debug("submit basic info resp.content: %s", resp.content)
                 
-        return False
+        return result
 
 
     def _open_set_payment_page(self):
@@ -221,9 +201,14 @@ class YunmallInfo():
 
         end = content.find(",", start)
         pay_url = "%s%s" % (settings.YUNMALL_HOST, content[start+8: end-1])
-        LOG.info("set paypassword port url: %s", pay_url)
         resp = self.request.post(pay_url, data=payload,
                                 headers=header)
+        
+        LOG.info("set paypassword port url: %s, resp.url: %s", pay_url, resp.url)
+        result = False
+        if resp.url.find("/member/index") >= 0:
+            return result
+
         LOG.debug("submit payment info resp.content: %s", resp.content)
         if resp.ok:
             ret = resp.json()
@@ -234,10 +219,27 @@ class YunmallInfo():
                 self.fresher.pay_password = "663366"
                 self.fresher.step = 3;
                 self.fresher.save()
-                return True
+                result = True
                 
-        return False
+        return result
 
+    def _open_index_page(self):
+        page = self.request.get(settings.MEMBER_INDEX_URL)
+        LOG.info("Get member/index.html, result: %s %s", 
+                            page.url, page.status_code)
+        jump = None
+        if page.ok:
+            content = page.content 
+            info = content.find("'location.href = \"/member/information.html\"'")
+            pay = content.find("'location.href = \"/member/payPassword.html\"")
+            LOG.info("index page find INFO=%s, PAY=%s", info, pay)
+            if info >= 0:
+                jump = INFO
+
+            if pay >= 0:
+                jump = PAY
+
+        return jump
 
         
     def start(self):
@@ -245,26 +247,40 @@ class YunmallInfo():
             LOG.info("No person need to submit information, exit.")
             return False
         result = False 
-        page = self._open_basic_info_page() 
-        content = page.content 
-        self._save_invate_code(content)
-       
-        try:
-            for i in range(settings.RETRY_COUNT): 
-                if self._submit_basic_info():
-                    break
-        except Exception as ex:
-            LOG.exception("submit basic info raise exception.")
+        
+        self._open_index_page()
 
-        try:
-            for i in range(settings.RETRY_COUNT): 
-                time.sleep(2)
-                page = self._open_set_payment_page() 
-                cracked, very_code = self._crack_verify_img()
-                if self._submit_payment_info(page.content, very_code):
-                    result = True
-                    break
-        except Exception as ex:
-            LOG.exception("submit payment info raise exception.")
+        jump = INFO   
+        index = 0
+        while jump:
+            time.sleep(3)
+            if jump == INFO:
+                try:
+                    page = self._open_basic_info_page() 
+                    content = page.content 
+                    self._save_invate_code(content)
+                    if self._submit_basic_info():
+                        LOG.info("************************submit basic info OK")
+                except Exception as ex:
+                    LOG.exception("submit basic info raise exception.")
+
+            if jump == PAY:
+                try:
+                    page = self._open_set_payment_page() 
+                    cracked, very_code = self._crack_verify_img()
+                    if self._submit_payment_info(page.content, very_code):
+                        LOG.info("**********************submit payment info OK")
+                except Exception as ex:
+                    LOG.exception("submit payment info raise exception.")
+
+            jump = self._open_index_page()
+
+            if not jump:
+                result = True
+                break
+
+            index = index + 1
+            if index > 20:
+                break
 
         return result
