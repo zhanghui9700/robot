@@ -1,0 +1,207 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2016-10-30 09:16+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: models.py:13
+msgid "Error"
+msgstr "错误"
+
+#: models.py:14
+msgid "Register"
+msgstr "已注册"
+
+#: models.py:15
+msgid "Profile"
+msgstr "已提交基本信息"
+
+#: models.py:16 models.py:26
+msgid "Pay Password"
+msgstr "已设置支付密码"
+
+#: models.py:17 settings.py:28
+msgid "Succeed"
+msgstr "成功"
+
+#: models.py:21
+msgid "Invate Code"
+msgstr "邀请码"
+
+#: models.py:23
+msgid "Name"
+msgstr "用户名"
+
+#: models.py:24
+msgid "Mobile"
+msgstr "手机号"
+
+#: models.py:25
+msgid "Password"
+msgstr "登录密码"
+
+#: models.py:30
+msgid "Child"
+msgstr "邀请数量"
+
+#: models.py:32
+msgid "Chinese Name"
+msgstr "姓名"
+
+#: models.py:33
+msgid "Chinese ID"
+msgstr "身份证号"
+
+#: models.py:34
+msgid "Email"
+msgstr "邮箱"
+
+#: models.py:36
+msgid "Process"
+msgstr "进度"
+
+#: models.py:40
+msgid "Person"
+msgstr "用户"
+
+#: models.py:41
+msgid "Persons"
+msgstr "用户"
+
+#: models.py:98
+msgid "Excceed Code"
+msgstr "邀请码黑名单"
+
+#: models.py:99
+msgid "Excced Codes"
+msgstr "邀请码黑名单"
+
+#: models.py:120
+msgid "Excceed Mobile"
+msgstr "手机号黑名单"
+
+#: models.py:121
+msgid "Excced Mobile"
+msgstr "手机号黑名单"
+
+#: models.py:125 models.py:142 models.py:143
+msgid "Config"
+msgstr "系统配置"
+
+#: models.py:127
+msgid "Value"
+msgstr "值"
+
+#: models.py:128
+msgid "Description"
+msgstr "描述"
+
+#: settings.py:9
+msgid "Paused"
+msgstr "暂停执行"
+
+#: settings.py:10
+msgid "Day Quota"
+msgstr "每日注册限额"
+
+#: settings.py:14 settings.py:19 settings.py:44 settings.py:52 settings.py:60
+msgid "OK"
+msgstr ""
+
+#: settings.py:15 settings.py:29 settings.py:45
+msgid "Failed"
+msgstr ""
+
+#: settings.py:20
+msgid "SMS Frequenct"
+msgstr ""
+
+#: settings.py:21
+msgid "Mobile Registed"
+msgstr ""
+
+#: settings.py:22
+msgid "User Not Exist"
+msgstr ""
+
+#: settings.py:23 settings.py:40 settings.py:62
+msgid "Image Code Error"
+msgstr ""
+
+#: settings.py:24
+msgid "USER CONFLICT"
+msgstr ""
+
+#: settings.py:30 settings.py:53
+msgid "UserName Conflict"
+msgstr ""
+
+#: settings.py:31
+msgid "Mobile Conflict"
+msgstr ""
+
+#: settings.py:32 settings.py:56
+msgid "Mail Format Error"
+msgstr ""
+
+#: settings.py:33
+msgid "Mobile Format Error"
+msgstr ""
+
+#: settings.py:34
+msgid "SMS Code Incorrect"
+msgstr ""
+
+#: settings.py:35
+msgid "SMS Code Expired"
+msgstr ""
+
+#: settings.py:36 settings.py:55
+msgid "Mail Exist"
+msgstr ""
+
+#: settings.py:37
+msgid "Password Format Error"
+msgstr ""
+
+#: settings.py:38
+msgid "Password Too Sample"
+msgstr ""
+
+#: settings.py:39
+msgid "Invate Error"
+msgstr ""
+
+#: settings.py:46
+msgid "Password Error"
+msgstr ""
+
+#: settings.py:47
+msgid "Locked"
+msgstr ""
+
+#: settings.py:48
+msgid "Device Only"
+msgstr ""
+
+#: settings.py:54
+msgid "NickName Conflict"
+msgstr ""
+
+#: settings.py:61
+msgid "Set Paypassword Faield"
+msgstr ""
