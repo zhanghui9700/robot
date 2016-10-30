@@ -174,7 +174,7 @@ class YunmallRegister():
                 Fish.mark_excceed(code=code)
                 msg = "Quota excceed, code=%s" % code
                 self.code = None
-                raise Exception(msg)
+
             if ret in ["36", 36]:
                 msg = "Invate not exist, code=%s" % code
                 self.code = None
@@ -273,7 +273,7 @@ class YunmallRegister():
         try:
             self.code = self._check_invate_code(code=self.code)
         except Exception as ex:
-            LOG.error(ex.message)
+            LOG.exception(ex.message)
 
         if not self.code:
             self.code = self._find_invate_code()

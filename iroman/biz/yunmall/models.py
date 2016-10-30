@@ -57,7 +57,7 @@ class Fish(BaseModel):
         if not code:
             return
         cls.living.filter(code=code).update(child_count=26)
-        ExcceedCode.living.create(code=self.code)
+        ExcceedCode.living.create(code=code)
 
     @classmethod
     def today_reg_count(cls):
