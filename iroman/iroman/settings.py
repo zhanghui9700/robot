@@ -7,6 +7,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.6/ref/settings/
 """
 
+import sys
+# sys.setdefaultencoding() does not exist, here!
+reload(sys)  # Reload does the trick!
+sys.setdefaultencoding('UTF8')
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import logging
 import logging.config
