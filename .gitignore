@@ -28,4 +28,4 @@ test_email.py
 venv
 .ropeproject
 local_settings.py
-ironman/static/
+iroman/static/
