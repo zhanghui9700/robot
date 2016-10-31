@@ -40,9 +40,14 @@ class Command(BaseCommand):
         self.stdout.write("CHECK_NICKNAME email=%s, id=%s, nickname=%s" % (
                             email, id_card, nickname)) 
 
+    def _check_mobile_settings(self):
+        self.stdout.write("CHECK_MOBILE USER=%s, PWD=%s, PID=%s" % (
+                            settings.YMA_USER, settings.YMA_USER_PWD,
+                            settings.YMA_PID)) 
+
     def handle(self, *args, **kwargs):
-        self.stdout.write(__name__)
         self.stdout.write(self.style.WARNING("************CHECK START************"))
         self._check_mail()
         self._check_nick_name()
+        self._check_mobile_settings()
         self.stdout.write(self.style.WARNING("************CHECK  END*************"))

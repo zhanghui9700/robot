@@ -16,6 +16,7 @@ sys.setdefaultencoding('UTF8')
 import logging
 import logging.config
 import os
+import random
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 try:
@@ -196,3 +197,9 @@ except (ImportError, ImportWarning) as e:
 
 
 logging.config.dictConfig(LOG_CONFIG)
+
+__YMA = YMA_LIST[random.randint(0, len(YMA_LIST) - 1)]
+
+YMA_USER = __YMA.get("YMA_USER", "adyvicki")
+YMA_USER_PWD = __YMA.get("YMA_USER_PWD", "12ab!@")
+YMA_PID = __YMA.get("YMA_PID", "14022")

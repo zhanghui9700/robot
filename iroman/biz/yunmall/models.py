@@ -43,7 +43,9 @@ class Fish(BaseModel):
     @classmethod
     def get_invator(cls):
         if cls.living.filter(child_count__lt=26).exclude(code=None).exists():
-            return cls.living.filter(child_count__lt=26).exclude(code=None).first()
+            return cls.living.filter(child_count__lt=26, step=3)\
+                        .exclude(code=None)\
+                        .first()
         return None
 
     @classmethod
