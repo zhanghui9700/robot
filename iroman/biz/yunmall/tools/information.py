@@ -201,25 +201,28 @@ class YunmallInfo():
 
         end = content.find(",", start)
         pay_url = "%s%s" % (settings.YUNMALL_HOST, content[start+8: end-1])
-        resp = self.request.post(pay_url, data=payload,
-                                headers=header)
-        
-        LOG.info("set paypassword port url: %s, resp.url: %s", pay_url, resp.url)
-        result = False
-        if resp.url.find("/member/index") >= 0:
-            return result
 
-        LOG.debug("submit payment info resp.content: %s", resp.content)
-        if resp.ok:
-            ret = resp.json()
-            LOG.info("submit payment info return is: %s",
-                        PAY_INFO_RESULT.DISPLAY.get(ret, ret)) 
+        for i in range(settings.RETRY_COUNT):
+            resp = self.request.post(pay_url, data=payload,
+                                    headers=header)
+            
+            LOG.debug("set paypassword port url: %s, resp.url: %s", pay_url,
+                                                                resp.url)
+            if resp.url.find("/member/index") >= 0:
+                break
 
-            if ret == PAY_INFO_RESULT.OK:
-                self.fresher.pay_password = "663366"
-                self.fresher.step = 3;
-                self.fresher.save()
-                result = True
+            #LOG.debug("submit payment info resp.content: %s", resp.content)
+            if resp.ok:
+                ret = resp.json()
+                LOG.info("submit payment info return is: %s",
+                            PAY_INFO_RESULT.DISPLAY.get(ret, ret)) 
+
+                if ret == PAY_INFO_RESULT.OK:
+                    self.fresher.pay_password = "663366"
+                    self.fresher.step = 3;
+                    self.fresher.save()
+                    result = True
+                    break 
                 
         return result
 
@@ -260,7 +263,7 @@ class YunmallInfo():
                     content = page.content 
                     self._save_invate_code(content)
                     if self._submit_basic_info():
-                        LOG.info("************************submit basic info OK")
+                        LOG.info("----------submit basic info OK-------------")
                 except Exception as ex:
                     LOG.exception("submit basic info raise exception.")
 
@@ -269,8 +272,9 @@ class YunmallInfo():
                     page = self._open_set_payment_page() 
                     cracked, very_code = self._crack_verify_img()
                     if self._submit_payment_info(page.content, very_code):
-                        LOG.info("**********************submit payment info OK")
+                        LOG.info("==========submit payment info OK==========")
                 except Exception as ex:
+                    time.sleep(5)
                     LOG.exception("submit payment info raise exception.")
 
             jump = self._open_index_page()

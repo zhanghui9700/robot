@@ -148,6 +148,7 @@ class YmaApi():
             "mobiles": mobile,
         }
         resp = self._get(settings.YMA_HOST, payload=payload)       
+        LOG.debug("yma add %s to black return: %s", mobile, resp.content)
         if not resp.ok:
             LOG.warning("Yma add %s to black failed, return: %s",
                          mobile, resp.content)
