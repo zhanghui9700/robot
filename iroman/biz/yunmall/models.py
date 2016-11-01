@@ -1,6 +1,8 @@
 #-*- coding=utf-8 -*-
 
 from datetime import date
+from datetime import datetime
+from datetime import timedelta
 
 from django.db import models
 from django.db.models import F
@@ -43,6 +45,17 @@ class Fish(BaseModel):
         verbose_name_plural = _("Persons")
 
     @classmethod
+    def get_one_blocked(cls):
+        """
+        registed, but not submit basic/payment info
+        """
+        now = datetime.now() 
+        diff = timedelta(minutes=15)
+        before = now - diff
+        if cls.living.filter(step=1, code=None).exists():
+            return cls.living.filter(step=1, create_date__lt=before).first()
+
+    @classmethod
     def get_invator(cls):
         if cls.living.filter(child_count__lt=26).exclude(code=None).exists():
             return cls.living.filter(child_count__lt=26, step=3)\
@@ -81,6 +94,14 @@ class Fish(BaseModel):
             parent.child_count = parent.child_count + 1
             parent.save()
         return obj
+
+    @property
+    def info_finished(self):
+        return bool(self.email) and bool(self.id_card) and bool(self.nickname)
+
+    @property
+    def pay_finished(self):
+        return bool(self.pay_password) 
 
     def __unicode__(self):
         return u"%s" % self.mobile

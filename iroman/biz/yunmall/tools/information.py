@@ -109,6 +109,8 @@ class YunmallInfo():
         return result
 
     def _save_invate_code(self, content):
+        if self.fresher.code:
+            return
         soup = BeautifulSoup(content, "lxml")
         #print soup.prettify()
         member = soup.find("td", attrs={"class", "member-info-cols-w"})
@@ -125,6 +127,9 @@ class YunmallInfo():
             raise Exception("save self invate code failed.")
 
     def _submit_basic_info(self): 
+        if self.fresher.info_finished:
+            return
+            
         email, id_card, nick_name, new_password = utils.gen_basic_info()
         payload = {
             "u[email]": email,   
@@ -181,10 +186,7 @@ class YunmallInfo():
 
         return page 
 
-    def _submit_payment_info(self, content, very_code):
-        #soup = BeautifulSoup(content, "lxml")
-        #member = soup.find("td", attrs={"class", "member-info-cols-w"})
-   
+    def _submit_payment_info(self, content, very_code): 
         payload = {
             "u[oldPassword]": self.fresher.password, 
             "u[payPassword]": "663366", 
@@ -232,59 +234,71 @@ class YunmallInfo():
                             page.url, page.status_code)
         jump = None
         if page.ok:
+            if page.url.find("login/index.html") >= 0:
+                raise Exception("Fresher %s not logined." % self.fresher)
+
             content = page.content 
             info = content.find("'location.href = \"/member/information.html\"'")
             pay = content.find("'location.href = \"/member/payPassword.html\"")
+
             LOG.info("index page find INFO=%s, PAY=%s", info, pay)
+
             if info >= 0:
                 jump = INFO
 
             if pay >= 0:
                 jump = PAY
 
+        LOG.info("Index page jump to 1 info, 2 pay, jump=%s", jump)
         return jump
 
         
     def start(self):
+        result = False 
         if not self.fresher:
             LOG.info("No person need to submit information, exit.")
-            return False
-        result = False 
-        
-        self._open_index_page()
-
-        jump = INFO   
+            return result
+              
+        jump = self._open_index_page()
         index = 0
-        while jump:
-            time.sleep(3)
+        while not self.fresher.info_finished \
+            or not self.fresher.pay_finished:
+            index = index + 1
+            if index > 20:
+                break
+
             if jump == INFO:
                 try:
-                    page = self._open_basic_info_page() 
-                    content = page.content 
-                    self._save_invate_code(content)
-                    if self._submit_basic_info():
-                        LOG.info("----------submit basic info OK-------------")
+                    if not self.fresher.info_finished:
+                        page = self._open_basic_info_page() 
+                        content = page.content 
+                        self._save_invate_code(content)
+                        if self._submit_basic_info():
+                            LOG.info("----------submit basic info OK-------------")
+                    else:
+                        LOG.debug("fresher information has finished, break.")
                 except Exception as ex:
                     LOG.exception("submit basic info raise exception.")
 
             if jump == PAY:
                 try:
-                    page = self._open_set_payment_page() 
-                    cracked, very_code = self._crack_verify_img()
-                    if self._submit_payment_info(page.content, very_code):
-                        LOG.info("==========submit payment info OK==========")
+                    if not self.fresher.pay_finished:
+                        page = self._open_set_payment_page() 
+                        cracked, very_code = self._crack_verify_img()
+                        if self._submit_payment_info(page.content, very_code):
+                            LOG.info("==========submit payment info OK==========")
+                    else:
+                        LOG.debug("fresher paypassword has finished, break.")
                 except Exception as ex:
-                    time.sleep(5)
+                    time.sleep(3)
                     LOG.exception("submit payment info raise exception.")
 
+            result =  self.fresher.info_finished and self.fresher.pay_finished
+
+            if result:
+                break
+
+            time.sleep(2)
             jump = self._open_index_page()
-
-            if not jump:
-                result = True
-                break
-
-            index = index + 1
-            if index > 20:
-                break
 
         return result
