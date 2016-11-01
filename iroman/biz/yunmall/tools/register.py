@@ -236,7 +236,7 @@ class YunmallRegister():
         }
         resp = self.request.post(settings.REGISTER_POST_URL, data=payload,
                                 headers=header)
-        LOG.info("register submit payloaa: %s", payload)
+        LOG.info("register submit payload: %s", payload)
         result = False
         if resp.ok:
             ret = resp.json()
