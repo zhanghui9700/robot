@@ -8,8 +8,29 @@ import time
 
 from .api.damatu import API as dama_api
 from .api.yma import API as yma_api
-
 from common import randname
+ 
+
+def ip2int(ip_str):
+    ip_int = 0
+    i = 3
+    numbers = str(ip_str).split('.')
+    for num in numbers:
+        ip_int += int(num) * (256 ** i) # or pow(256, i)
+        i -= 1
+    return ip_int   
+ 
+
+def int2ip(ip_int):
+    ip_str = ''
+    left_value = ip_int
+    for i in [3, 2, 1, 0]:
+        ipTokenInt = left_value / 256**i
+        ip_str = ip_str + str(ipTokenInt)
+        if i!=0:
+            ip_str = ip_str + '.'
+        left_value %= 256**i
+    return ip_str  
 
 
 def gen_username(length=8):
