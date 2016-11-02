@@ -4,6 +4,7 @@ import os
 import csv
 import random
 import string
+import socket
 import time
 
 from .api.damatu import API as dama_api
@@ -31,6 +32,18 @@ def int2ip(ip_int):
             ip_str = ip_str + '.'
         left_value %= 256**i
     return ip_str  
+
+
+def get_host_ip():
+    ip = None
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("baidu.com", 80))
+        ip = s.getsockname()[0]
+        s.close()  
+    except:
+        pass
+    return ip
 
 
 def gen_username(length=8):

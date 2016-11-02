@@ -3,8 +3,10 @@
 from datetime import date
 
 from django.db import models
+from django.db.models import F
 from django.utils.translation import ugettext_lazy as _
 
+from common.utils import ip2int, int2ip
 from common.models import BaseModel
 
 from .settings import CONFIG
@@ -143,3 +145,53 @@ class Config(BaseModel):
         db_table = "yunmall_config"
         verbose_name = _("Config")
         verbose_name_plural = _("Config") 
+
+
+class IPPool(BaseModel):
+    ip_int = models.BigIntegerField(_("IP"), default=0, unique=True)
+    ip_str = models.CharField(_("IP"), max_length=64, unique=True)
+    count = models.IntegerField(_("IP Count"), default=1)
+
+
+    @classmethod
+    def record(cls, ip_str):
+        ip_int = ip2int(ip_str)
+        if cls.living.filter(ip_int=ip_int).exists():
+            cls.living.filter(ip_int=ip_int).update(count=F('count')+1)
+        else:
+            cls.living.create(ip_int=ip_int, ip_str=ip_str, count=1)
+
+        return cls.living.get(ip_int=ip_int)
+       
+    class Meta:
+        db_table = "yunmall_ip_pool"
+        verbose_name = _("IP")
+        verbose_name_plural = _("IPs") 
+
+
+class IPBlack(BaseModel):
+    ip = models.ForeignKey("IPPool", null=True, 
+                                db_constraint=False,
+                                related_name="blacks") 
+    fish = models.ForeignKey("Fish", null=True, 
+                                db_constraint=False,
+                                related_name="sources") 
+
+    @classmethod
+    def exist(cls, ip_str):
+        ip_int = ip2int(ip_str)
+        return cls.living.filter(ip__ip_int=ip_int).exists()
+
+    @classmethod
+    def record(cls, ip_str, fresher):
+        ip_int = ip2int(ip_str)
+        ip = IPPool.living.get_or_none(ip_int=ip_int)
+        if not ip:
+            ip = IPPool.record(ip_str) 
+
+        return cls.living.create(ip=ip, fish=fresher)
+
+    class Meta:
+        db_table = "yunmall_ip_black"
+        verbose_name = _("Black IP")
+        verbose_name_plural = _("Black IP") 

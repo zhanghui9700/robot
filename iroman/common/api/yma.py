@@ -16,8 +16,7 @@ class YmaApi():
         self.pid = pid
         self.request = requests.Session()
         self.token = None
-
-        self.login()
+        #self.login()
 
     @property
     def logined(self):

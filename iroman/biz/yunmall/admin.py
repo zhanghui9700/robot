@@ -3,7 +3,8 @@
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 
-from .models import (Fish, ExcceedCode, ExcceedMobile, Config)
+from .models import (Fish, ExcceedCode, ExcceedMobile, Config,
+                    IPPool, IPBlack)
 
 
 class FishAdmin(admin.ModelAdmin):    
@@ -29,6 +30,31 @@ class ConfigAdmin(admin.ModelAdmin):
         model = Config
 
 
+class IPPoolAdmin(admin.ModelAdmin):
+    list_display = ("ip_str", "count", "create_date")
+
+    class Meta:
+        model = IPPool
+
+
+class IPBlackAdmin(admin.ModelAdmin):
+    list_display = ("get_ip", "get_mobile", "create_date")
+
+    def get_ip(self, obj):
+        return obj.ip.ip_str
+
+    def get_mobile(self, obj):
+        return obj.fish.mobile
+
+    get_ip.short_description = _('IP')
+    get_mobile.short_description = _("Mobile")
+
+    class Meta:
+        model = IPBlack
+
+
 admin.site.register(Fish, FishAdmin)
 admin.site.register(ExcceedMobile, ExcceedMobileAdmin)
 admin.site.register(Config, ConfigAdmin)
+admin.site.register(IPPool, IPPoolAdmin)
+admin.site.register(IPBlack, IPBlackAdmin)

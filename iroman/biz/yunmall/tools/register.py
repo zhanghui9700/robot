@@ -16,7 +16,8 @@ from common import utils
 from common.utils import DAMA_API as DAMA
 from common.utils import MOBILE_API as MOBILE
 
-from biz.yunmall.models import (Fish, ExcceedCode, ExcceedMobile, Config)
+from biz.yunmall.models import (Fish, ExcceedCode, ExcceedMobile, Config,
+                                IPBlack)
 from biz.yunmall.settings import (VERIFY_CODE, SMS_SEND_CODE, REGISTER_CODE,
                                 CONFIG)
 from biz.yunmall.tools.information import YunmallInfo
@@ -26,9 +27,10 @@ LOG = logging.getLogger(__name__)
 
 class YunmallRegister():
 
-    def __init__(self, code=None):
+    def __init__(self, ip_str, code=None):
         self.request = requests.Session()
         self.request.headers.update(settings.HTTP_HEADER)
+        self.ip_str = ip_str
         self.code = code
 
     def _save_img(self, url):
@@ -246,6 +248,7 @@ class YunmallRegister():
             if ret == REGISTER_CODE.SUCCEED:
                 result = Fish.new(invate_code, username, pwd, mobile)
                 try:
+                    IPBlack.record(self.ip_str, result)
                     MOBILE.add_to_black(mobile) 
                 except Exception as ex:
                     LOG.exception("Register succeed add mobile black failed.")
@@ -344,6 +347,7 @@ class YunmallRegister():
                 fresher = self._register(self.code, mobile, sms_code, img_value)
                 LOG.info("new fresher is: %s", fresher)
                 if fresher:
+                    time.sleep(1)
                     break
                 else:
                     time.sleep(2)
