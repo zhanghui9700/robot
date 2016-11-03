@@ -248,7 +248,8 @@ class YunmallRegister():
             if ret == REGISTER_CODE.SUCCEED:
                 result = Fish.new(invate_code, username, pwd, mobile)
                 try:
-                    IPBlack.record(self.ip_str, result)
+                    if getattr(settings, "SWITCH", False):
+                        IPBlack.record(self.ip_str, result)
                     MOBILE.add_to_black(mobile) 
                 except Exception as ex:
                     LOG.exception("Register succeed add mobile black failed.")
@@ -354,15 +355,18 @@ class YunmallRegister():
         
         # register succeed, submit information 
         if fresher:
-            for i in range(settings.RETRY_COUNT):
-                try:
-                    info = YunmallInfo(self.request, fresher)
-                    if info.start():
-                        result = True
-                        break
-                except Exception as ex:
-                    LOG.exception("YunmallInfo.start failed.")
-                    time.sleep(2)
+            if not getattr(settings, "ONLY_REGISTER", False):
+                for i in range(settings.RETRY_COUNT):
+                    try:
+                        info = YunmallInfo(self.request, fresher)
+                        if info.start():
+                            result = True
+                            break
+                    except Exception as ex:
+                        LOG.exception("YunmallInfo.start failed.")
+                        time.sleep(2)
+            else:
+                result = True
         else:
             LOG.error("registe new fresher is None.")
 

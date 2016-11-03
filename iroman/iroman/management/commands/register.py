@@ -37,10 +37,16 @@ class Command(BaseCommand):
         LOG.info("%s%s%s", "*"*15, "regiseter.start", "*"*15)
         succeed = False
         try:
-            ip_str = get_host_ip()
-            IPPool.record(ip_str)
-            if IPBlack.exist(ip_str):
-                raise Exception("IP %s in black list.")
+            ip_str = None
+            if getattr(settings, "SWITCH", False):
+                while True:
+                    time.sleep(1)
+                    ip_str = get_host_ip()
+                    if ip_str:
+                        break
+                IPPool.record(ip_str)
+                if IPBlack.exist(ip_str):
+                    raise Exception("IP %s in black list.")
             succeed = self.run(ip_str, kwargs.get("code", None))
         except Exception as ex:
             LOG.exception("register.run raise exception.")

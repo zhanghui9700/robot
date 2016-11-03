@@ -83,7 +83,7 @@ class Fish(BaseModel):
         return obj
 
     def __unicode__(self):
-        return u"Code:%s Mobile:%s" % (self.code, self.mobile)
+        return u"%s" % self.mobile
 
     def fake_delete(self):
         self.deleted = True

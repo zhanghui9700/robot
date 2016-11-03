@@ -6,10 +6,10 @@ set -eu
 
 while [ true ];
 do
-    sudo pon dsl-provider
+    #sudo pon dsl-provider
     sleep 2
     echo `date` 
     echo `ip r`
     $PYTHON manage.py register
-    sudo poff
+    #sudo poff
 done
