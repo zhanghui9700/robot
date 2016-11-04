@@ -119,7 +119,7 @@ class YunmallRegister():
                 break 
 
         if not mobiles:
-            LOG.debug("Get yma mobiles is [].")
+            LOG.debug("Get mobiles is [].")
 
         return mobiles
 

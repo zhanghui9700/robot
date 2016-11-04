@@ -7,9 +7,23 @@ import string
 import socket
 import time
 
-from .api.damatu import API as dama_api
-from .api.yma import API as yma_api
+from django.conf import settings
+
 from common import randname
+
+try:
+    from .api.damatu import API as dama_api
+    from .api.yma import API as yma_api
+    from .api.tm import API as tm_api
+except Exception as ex:
+    raise ex
+else:
+    DAMA_API = dama_api  
+    if getattr(settings, "YMA_ENABLED", True):
+        MOBILE_API = yma_api
+
+    if getattr(settings, "TM_ENABLED", False):
+        MOBILE_API = tm_api
  
 
 def ip2int(ip_str):
@@ -78,7 +92,3 @@ def bool_from_string(string=None):
         return False 
     else:
         return False
-
-
-DAMA_API = dama_api
-MOBILE_API = yma_api
