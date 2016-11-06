@@ -1,0 +1,60 @@
+
+<div class="col-md-12">
+    <div class="portlet light bordered">
+        <div class="portlet-title">
+            <div class="caption">
+                <i class="icon-bar-chart  font-green-haze"></i>
+                <span class="caption-subject bold uppercase font-green-haze">
+                    {[{ 'overview.recent_registered' | i18next }]}
+                </span>
+                <span class="caption-helper"></span>
+            </div>
+        </div>
+        <div class="portlet-body">
+            <div id="" class="dataTables_wrapper no-footer">
+                <table ng-table="fish_table"
+                       class="table table-striped table-bordered table-advance table-hover">
+                    <tbody>
+                    <tr ng-repeat="fish in $data">
+                        <td data-title="'用户名'">                            
+                            <span>{[{ fish.username }]}</span>
+                        </td>
+                        <td data-title="'手机号'">                            
+                            <span>{[{ fish.mobile }]}</span>
+                        </td>
+                        <td data-title="'邀请码'">                            
+                            <span>{[{ fish.code }]}</span>
+                        </td>
+                        <td data-title="'邀请人'">                            
+                            <span>{[{ fish.parent_mobile }]}</span>
+                        </td>
+                        <td data-title="'好友数'">                            
+                            <span>{[{ fish.child_count }]}</span>
+                        </td>
+                        <td data-title="'密码'">                            
+                            <span>{[{ fish.password }]}</span>
+                        </td>
+                        <td data-title="'支付密码'">                            
+                            <span>{[{ fish.pay_password }]}</span>
+                        </td>
+                        <td data-title="'姓名'">                            
+                            <span>{[{ fish.nickname }]}</span>
+                        </td>
+                        <td data-title="'身份证号'">                            
+                            <span>{[{ fish.id_card }]}</span>
+                        </td>
+                        <td data-title="'邮箱'">                            
+                            <span>{[{ fish.email }]}</span>
+                        </td>
+                        <td data-title="'注册时间'">                            
+                            <span>{[{ fish.create_date }]}</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!-- END CHART PORTLET-->
+</div>
+

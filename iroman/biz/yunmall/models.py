@@ -107,6 +107,12 @@ class ExcceedMobile(BaseModel):
     mobile = models.CharField(max_length=32, unique=True) 
 
     @classmethod
+    def today_count(cls):
+        today = date.today()
+        return cls.living.filter(create_date__gte=today).count() 
+    
+
+    @classmethod
     def exist(cls, mobile):
         return cls.living.filter(mobile=mobile).exists()
 

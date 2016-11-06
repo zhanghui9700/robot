@@ -8,6 +8,9 @@ import socket
 import time
 
 from django.conf import settings
+from django.utils.translation import ugettext_lazy as _
+from rest_framework.response import Response
+from rest_framework import status
 
 from common import randname
 
@@ -92,3 +95,39 @@ def bool_from_string(string=None):
         return False 
     else:
         return False
+
+def retrieve_params(data, *keys):
+    return tuple(data[key] for key in keys)
+
+
+def retrieve_list_params(data, *keys):
+    return tuple(data.getlist(key) for key in keys)
+
+
+def fail(msg='', status=status.HTTP_200_OK):
+    return Response({'success': False, 'msg': msg}, status=status)
+
+
+def serializer_fail(errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR):
+    error = sys_json.dumps(errors)
+    return Response({'success': False, 'msg': error}, status=status)
+
+
+def json(data):
+    return Response(data, status=status.HTTP_200_OK)
+
+
+def success(msg='', status=status.HTTP_200_OK):
+    return Response({'success': True, 'msg': msg}, status=status)
+
+
+def success_with_data(dicts, status=status.HTTP_200_OK):
+    if 'success' not in dicts.keys():
+        dicts['success'] = True
+
+    return Response(dicts, status=status)
+
+
+def error(msg=_('Operation failed. Unknown error happened!'),
+          status=status.HTTP_500_INTERNAL_SERVER_ERROR):
+    return Response({'success': False, 'msg': msg}, status=status)

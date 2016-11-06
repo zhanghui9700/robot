@@ -1,0 +1,77 @@
+.large-Modal .modal-dialog{
+  width:900px; height: 700px;
+}
+
+.modal-dialog {
+  margin: 60px auto;
+}
+
+.table .btn{
+  margin-right: 0;
+}
+
+ul.narrow-list {
+    list-style-type: none;
+    margin-left: -30px;
+}
+
+ul.narrow-list li {
+    margin: 2px;
+}
+
+td.action-group {
+    width: 120px;
+}
+
+td.create-time {
+    width: 120px;
+}
+
+.icon-success {
+    color: #45b6af;
+    font-size: 16px;
+}
+.icon-warning {
+    color: #dfba49;
+    font-size: 16px;
+}
+
+.no-margin-bottom {
+    margin-bottom: 0;
+}
+
+.no-margin-left {
+    margin-left: 0;
+}
+
+.portlet.box.blue-chambray.no-border {
+    border-style: none;
+    margin-left: -30px;
+}
+
+.highlight {
+    font-size: 16px;
+    color: green;
+}
+
+.darkness {
+    font-size: 16px;
+    color: grey;
+}
+
+.eon-help {
+    margin: 10px 0 0 5px;
+}
+
+.chart-size {
+    width: 100%;
+    height: 400px;
+}
+.chart-font {
+    font-size: 16px;
+}
+
+.inline-label {
+    position:relative;
+    float:left;
+}

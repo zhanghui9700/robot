@@ -1,0 +1,32 @@
+
+<div class="col-md-12">
+    <div class="portlet light bordered">
+        <div class="portlet-title">
+            <div class="caption">
+                <i class="icon-bar-chart  font-green-haze"></i>
+                <span class="caption-subject bold uppercase font-green-haze">
+                    {[{ 'overview.recent_mobile_black' | i18next }]}
+                </span>
+                <span class="caption-helper"></span>
+            </div>
+        </div>
+        <div class="portlet-body">
+            <div id="" class="dataTables_wrapper no-footer">
+                <table ng-table="mobile_black_table"
+                       class="table table-striped table-bordered table-advance table-hover">
+                    <tbody>
+                    <tr ng-repeat="black in $data">
+                        <td data-title="'手机号'">                            
+                            <span>{[{ black.mobile }]}</span>
+                        </td>
+                        <td data-title="'注册时间'">                            
+                            <span>{[{ black.create_date }]}</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!-- END CHART PORTLET-->
+</div>

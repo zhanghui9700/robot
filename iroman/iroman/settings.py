@@ -26,9 +26,6 @@ try:
 except:
     pass
 
-
-
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
 
@@ -50,8 +47,10 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'iroman',
     'biz',
+    'biz.i18n',
     'biz.yunmall',
     'render',
 )
@@ -65,8 +64,20 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-ROOT_URLCONF = 'iroman.urls'
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication'
+    ),  
 
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+
+    'DATETIME_FORMAT': "%Y-%m-%d %H:%M:%S",
+}
+
+ROOT_URLCONF = 'iroman.urls'
 WSGI_APPLICATION = 'iroman.wsgi.application'
 
 
@@ -97,7 +108,7 @@ USE_TZ = False
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATIC_URL = '/static/'
-LOGIN_URL = '/login'
+LOGIN_URL = '/login/'
 
 TEMPLATES = [
     {
@@ -195,6 +206,10 @@ except (ImportError, ImportWarning) as e:
     print "\033[44;37m                                        \033[0m"
     print "\033[44;37m ###################################### \033[0m"
 
+SITE_CONFIG = {
+    "BRAND": BRAND,
+    "THEME": THEME_NAME,
+}
 
 logging.config.dictConfig(LOG_CONFIG)
 
