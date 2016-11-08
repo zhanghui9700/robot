@@ -208,9 +208,14 @@ class YunmallInfo():
             resp = self.request.post(pay_url, data=payload,
                                     headers=header)
             
-            LOG.debug("set paypassword port url: %s, resp.url: %s", pay_url,
+            LOG.debug("set paypassword post url: %s, resp.url: %s", pay_url,
                                                                 resp.url)
             if resp.url.find("/member/index") >= 0:
+                LOG.error("set paypassword return to member/index.html, break.")
+                break
+
+            if resp.url.find("/login/index") >= 0:
+                LOG.error("set paypassword return to login/index.html, break.")
                 break
 
             #LOG.debug("submit payment info resp.content: %s", resp.content)
@@ -264,7 +269,7 @@ class YunmallInfo():
         while not self.fresher.info_finished \
             or not self.fresher.pay_finished:
             index = index + 1
-            if index > 20:
+            if index > settings.RETRY_COUNT*2:
                 break
 
             if jump == INFO:

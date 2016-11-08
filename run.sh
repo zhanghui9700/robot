@@ -10,6 +10,7 @@ do
     sleep 2
     echo `date` 
     echo `ip r`
-    $PYTHON manage.py register
+    #$PYTHON manage.py register
+    $PYTHON manage.py login
     #sudo poff
 done
