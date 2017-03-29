@@ -54,7 +54,7 @@ class SeleniumBrowser():
             result = False
             try:
                 self.browser.get(settings.PTX_LOGIN_URL)
-                time.sleep(settings.WAIT_INTERVAL*2)
+                _user = self._wait_element("find_element_by_id", "username")
                 _user = self.browser.find_element_by_id("username")
                 _user.clear()
                 _user.send_keys(settings.PTX_USER)
@@ -75,16 +75,45 @@ class SeleniumBrowser():
                     raise Exception("selenium login page can't find login button") 
 
                 login.click()
+
                 LOG.info("login button click, waiting...")
-                
+
+                # change store
                 for i in range(10):
                     time.sleep(settings.WAIT_INTERVAL)
-                    LOG.info(self.browser.current_url)
+                    LOG.info("wait login, current_url: %s", self.browser.current_url)
                     result = self.browser.current_url.find("WelcomeView") > -1
+                    change_store = self.browser.current_url.find("ForceChangeStoreView") > -1
+
                     if result:
                         break
-                    else:
-                        pass   
+                    
+                    if change_store:
+                        _select = self._wait_element("find_element_by_id", "selectStore")
+                        store = "US PC wholesale store"
+                        for option in _select.find_elements_by_tag_name('option'):
+                            if option.text == store:
+                                option.click()
+                                LOG.info("select store: %s",store)
+
+                                _continue = self._wait_element("find_element_by_name", "Submit.x")
+                                _continue.click()
+                                
+                                break
+                        time.sleep(settings.WAIT_INTERVAL)
+                        change_store_confirm = self.browser.current_url.find("ChangeStoreConfirmationView") > -1
+                        if change_store_confirm:
+                            self.browser.get(settings.PTX_WELCOME_URL)
+                
+                if not result:
+                    for i in range(10):
+                        time.sleep(settings.WAIT_INTERVAL)
+                        LOG.info("after change sotre, current_url: %s", self.browser.current_url)
+                        result = self.browser.current_url.find("WelcomeView") > -1
+                        if result:
+                            break
+                        else:
+                            pass 
 
                 if result:
                     LOG.info("ptx login succeed")
@@ -98,7 +127,7 @@ class SeleniumBrowser():
         if self.authenticated:
             return True;
 
-        for i in range(3):
+        for i in range(1):
             try:
                 if _login(self):
                     self.authenticated = True

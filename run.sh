@@ -1,6 +1,8 @@
 #!/bin/bash
 
-PYTHON=/usr/bin/python2.7
-cd /opt/robot/robot/18m
+PYTHON=/opt/robot/.venv/bin/python
+cd /opt/robot/i18m
 set -eu
+
+export DISPLAY=:1 
 $PYTHON manage.py order
