@@ -138,13 +138,16 @@ class SeleniumBrowser():
             raise Exception("ptx login failed, break down")
 
     def _go_category(self, category):
+        LOG.info("go to topcategory")
         self.browser.get(settings.TOP_CATEGORY_URL)
 
         time.sleep(settings.WAIT_INTERVAL)
 
-        category_link= self.browser.find_element_by_link_text(category)
-        top_category = category_link.find_element_by_xpath(".//ancestor::li")
+        top_category = self.browser.find_element_by_xpath('//strong[contains(text(), "PC notebooks")]')
         top_category.click()
+
+        top = top_category.find_element_by_xpath(".//ancestor::li")
+        category_link= top.find_element_by_link_text(category)
         category_link.click()
         LOG.info("%s category link click", category)
 
@@ -184,32 +187,36 @@ class SeleniumBrowser():
         LOG.info("max page: %s", option.text)
 
         add_cart_succeed = False
+        cart_counter = 0
         for index in xrange(max_page):
             jump = self.browser.find_element_by_xpath('//input[@alt="Jump to page"]')
             jump_page = self.browser.find_element_by_id("jumpPage")
             for option in jump_page.find_elements_by_tag_name('option'):
-                LOG.info("current page num: %s", (index+1))
                 if option.text == str(index+1):
                     option.click()
                     break
             jump.click()
 
-            time.sleep(settings.WAIT_INTERVAL*3)
+            time.sleep(settings.WAIT_INTERVAL*5)
             LOG.info(self.browser.current_url)
 
             for p in product_ids:
                 try:
                     product = self.browser.find_element_by_id(p)
                     product.click()
+                    cart_counter += 1
                     add_cart_succeed = True
                     LOG.info("find product with id: %s, select it", p)
                 except:
                     LOG.warning("can not find product with id: %s", p)
 
+            if cart_counter == len(product_ids):
+                break
+
         if not add_cart_succeed:
             raise Exception("can not find any product with category")
 
-        add_to_cart = self.browser.find_element_by_name("addToCartFlag.x")
+        add_to_cart = self._wait_element("find_element_by_name", "addToCartFlag.x")
         add_to_cart.click()
 
     def _view_cart(self):
@@ -225,22 +232,24 @@ class SeleniumBrowser():
 
     def _input_logistic(self):
         def _input_value(self, ele_id, value):
-            _input = self.browser.find_element_by_id(ele_id)
+            _input = self._wait_element("find_element_by_id",ele_id)
             _input.clear()
             _input.send_keys(value)
-            LOG.info("input value info: %s", ele_id)
+            LOG.info("input info: %s, value: %s", ele_id, value)
 
         def _select_by_text(self, ele_id, text):
             # try this:
             # from selenium.webdriver.support.ui import Select
             # select = Select(driver.find_element_by_id(element_id))
             # select.select_by_visible_text(label)
-            _select = self.browser.find_element_by_id(ele_id)
-            for option in _select.find_elements_by_tag_name('option'):
-                LOG.info(option.text)
+            _select = self._wait_element("find_element_by_id", ele_id)
+            options = _select.find_elements_by_tag_name('option')
+            LOG.error("select %s option count: %s", ele_id, len(options))
+            for option in options:
                 if option.text == text:
                     option.click()
-                    LOG.info("input checkout select: %s", ele_id)
+                    LOG.info("input checkout select: %s, value: %s",
+                                                        ele_id, text)
                     break
             else:
                 LOG.error("input checkout select: %s, no option!", ele_id)
@@ -254,9 +263,11 @@ class SeleniumBrowser():
             _input_value(self, element, value)
 
         for element, txt in select_fields:
-            time.sleep(1)
+            _select_by_text(self, element, txt)
+            time.sleep(settings.WAIT_INTERVAL)
             _select_by_text(self, element, txt)
 
+        time.sleep(settings.WAIT_INTERVAL)
         continue_submit = self.browser.find_element_by_name("OrderReviewCmd.x")
         #self.browser.save_screenshot("/tmp/checkout1-2.jpg")
         continue_submit.click()
@@ -265,6 +276,7 @@ class SeleniumBrowser():
         continue_submit = self._wait_element("find_element_by_name", "OrderSubmitCmd.x")
         #self.browser.save_screenshot("/tmp/checkout2-2.jpg")
         continue_submit.click()
+        time.sleep(settings.WAIT_INTERVAL)
 
     def auto_order(self, target=None):
         if not self.authenticated:
@@ -272,23 +284,20 @@ class SeleniumBrowser():
 
         if self.authenticated:
             for index, t in enumerate(target):
-                try:
-                    self._go_category(category=t.get("category"))
-                    LOG.info("get category done [1/5]")
+                self._go_category(category=t.get("category"))
+                LOG.info("get category done [1/5]")
 
-                    self._add_carts(product_ids=t.get("product_ids"))
-                    LOG.info("add carts done [2/5]")
-                    
-                    self._view_cart()
-                    LOG.info("view cart done [3/5]")
+                self._add_carts(product_ids=t.get("product_ids"))
+                LOG.info("add carts done [2/5]")
+                
+                self._view_cart()
+                LOG.info("view cart done [3/5]")
 
-                    self._input_logistic()
-                    LOG.info("input checkout info done [4/5]")
+                self._input_logistic()
+                LOG.info("input checkout info done [4/5]")
 
-                    self._submit()
-                    LOG.info("submit order done [5/5]")
-                except:
-                    LOG.exception("%s auto order failed.", t.get("category"))
+                self._submit()
+                LOG.info("submit order done [5/5]")
             LOG.info("auto order done")
         else:
             LOG.error("auto order failed, not authenticated!")
