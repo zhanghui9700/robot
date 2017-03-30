@@ -7,6 +7,7 @@ from django.conf import settings
 
 from selenium import webdriver
 from selenium.common import exceptions
+from selenium.webdriver.support.select import Select
 
 LOG = logging.getLogger(__name__)
 
@@ -141,9 +142,8 @@ class SeleniumBrowser():
         LOG.info("go to topcategory")
         self.browser.get(settings.TOP_CATEGORY_URL)
 
-        time.sleep(settings.WAIT_INTERVAL)
-
-        top_category = self.browser.find_element_by_xpath('//strong[contains(text(), "PC notebooks")]')
+        top_category = self._wait_element("find_element_by_xpath", 
+                            '//strong[contains(text(), "PC notebooks")]')
         top_category.click()
 
         top = top_category.find_element_by_xpath(".//ancestor::li")
@@ -162,12 +162,9 @@ class SeleniumBrowser():
 
         LOG.info("category url: %s", self.browser.current_url)
 
-        time.sleep(settings.WAIT_INTERVAL*2)
-
-        line = self.browser.find_element_by_id("selectLines")
-        for option in line.find_elements_by_tag_name('option'):
-            if option.text == "100":
-                option.click()
+        LOG.info("adjust page size to 100")  
+        line = Select(self._wait_element("find_element_by_id", "selectLines"))
+        line.select_by_visible_text("100") 
         go = self.browser.find_element_by_xpath('//input[@alt="Change lines per page"]')
         go.click()
     
@@ -179,26 +176,26 @@ class SeleniumBrowser():
         time.sleep(settings.WAIT_INTERVAL*2)
 
         max_page = 1
-        jump_page = self.browser.find_element_by_id("jumpPage")
-        for option in jump_page.find_elements_by_tag_name('option'):
+        jump_page = Select(self._wait_element("find_element_by_id", "jumpPage"))
+        for option in jump_page.options:
             if int(option.text) > max_page:
                 max_page = int(option.text)
 
-        LOG.info("max page: %s", option.text)
+        # TODO: max page, page size
+        LOG.info("max page: %s", max_page)
 
         add_cart_succeed = False
         cart_counter = 0
         for index in xrange(max_page):
-            jump = self.browser.find_element_by_xpath('//input[@alt="Jump to page"]')
-            jump_page = self.browser.find_element_by_id("jumpPage")
-            for option in jump_page.find_elements_by_tag_name('option'):
-                if option.text == str(index+1):
-                    option.click()
-                    break
-            jump.click()
+            LOG.info("max_page: %s, current: %s", max_page, index+1)
+            if index > 0:
+                jump_page = Select(self._wait_element("find_element_by_id", "jumpPage"))
+                jump_page.select_by_visible_text(str(index+1))
 
-            time.sleep(settings.WAIT_INTERVAL*5)
-            LOG.info(self.browser.current_url)
+                jump = self.browser.find_element_by_xpath('//input[@alt="Jump to page"]')
+                jump.click()
+
+            time.sleep(settings.WAIT_INTERVAL*3)
 
             for p in product_ids:
                 try:
@@ -238,21 +235,17 @@ class SeleniumBrowser():
             LOG.info("input info: %s, value: %s", ele_id, value)
 
         def _select_by_text(self, ele_id, text):
-            # try this:
-            # from selenium.webdriver.support.ui import Select
-            # select = Select(driver.find_element_by_id(element_id))
-            # select.select_by_visible_text(label)
-            _select = self._wait_element("find_element_by_id", ele_id)
-            options = _select.find_elements_by_tag_name('option')
-            LOG.error("select %s option count: %s", ele_id, len(options))
-            for option in options:
-                if option.text == text:
-                    option.click()
-                    LOG.info("input checkout select: %s, value: %s",
+            _select = Select(self._wait_element("find_element_by_id", ele_id))
+            options = _select.options 
+            LOG.info("select %s option count: %s", ele_id, len(options))
+            if options:
+                _select.select_by_visible_text(text)
+                LOG.info("input checkout select: %s, value: %s",
                                                         ele_id, text)
-                    break
             else:
                 LOG.error("input checkout select: %s, no option!", ele_id)
+
+            return _select.first_selected_option
 
         input_fields = settings.CHECKOUT_INPUT_FIELDS
         select_fields = settings.CHECKOUT_SELECT_FIELDS 
@@ -263,9 +256,11 @@ class SeleniumBrowser():
             _input_value(self, element, value)
 
         for element, txt in select_fields:
-            _select_by_text(self, element, txt)
-            time.sleep(settings.WAIT_INTERVAL)
-            _select_by_text(self, element, txt)
+            for i in range(5):
+                op = _select_by_text(self, element, txt)
+                if op and op.text == txt:
+                    break
+                time.sleep(settings.WAIT_INTERVAL)
 
         time.sleep(settings.WAIT_INTERVAL)
         continue_submit = self.browser.find_element_by_name("OrderReviewCmd.x")

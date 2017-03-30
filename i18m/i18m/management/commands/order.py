@@ -37,7 +37,7 @@ class Command(BaseCommand):
 
     def _check_time(self):
         now = datetime.datetime.utcnow()
-        if now.hour >= 13 or now.hour < 3:
+        if now.hour >= 13 or now.hour < 4:
             return True
         else:
             return False
