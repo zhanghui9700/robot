@@ -282,8 +282,11 @@ class SeleniumBrowser():
                 self._go_category(category=t.get("category"))
                 LOG.info("get category done [1/5]")
 
-                self._add_carts(product_ids=t.get("product_ids"))
-                LOG.info("add carts done [2/5]")
+                try:
+                    self._add_carts(product_ids=t.get("product_ids"))
+                    LOG.info("add carts done [2/5]")
+                except:
+                    continue
                 
                 self._view_cart()
                 LOG.info("view cart done [3/5]")
