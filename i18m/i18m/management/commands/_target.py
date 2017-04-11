@@ -7,6 +7,22 @@ import xlrd
 LOG = logging.getLogger(__name__)
 
 
+class Product(object):
+
+    def __init__(self, top_category, category, number, quantity):
+        self.top_category = top_category
+        self.category = category
+        self.number = number
+        self.quantity = quantity
+
+    def __str__(self):
+        return "%s: %s" % (self.number, self.quantity)
+
+    def __repr__(self):
+        return u"%s: %s" % (self.number, self.quantity)
+
+
+
 class OrderTarget():
 
     def __init__(self, path="/opt/18m/excels/"):
@@ -42,16 +58,7 @@ class OrderTarget():
             os.utime(p, None)
         LOG.info("xtouch %s", p) 
 
-    def construct(self):
-        """
-        result =  [
-            {"category": "T claim - tested working", 
-             "product_ids": ["2447HU5_0001263", "428424U_0000057", "ZLNN3A6Y_000008"]}, 
-            {"category": "G claim - tested/failed", 
-             "product_ids": ["ZLNN14L0_000034", "4282AD4_0000008"]}, 
-        ]
-        """
-
+    def construct(self): 
         if not self.target:
             LOG.info("no target excel find break") 
             return None
@@ -76,13 +83,17 @@ class OrderTarget():
         for row in range(rows):
             if row < start_row:
                 continue
-            top_category, category, product = [
-                    sheet.cell_value(rowx=row, colx=i) for i in range(3)]
-            _.setdefault(category, []).append(product)
+            top_category, category, product, desc, quantity = [
+                    sheet.cell_value(rowx=row, colx=i) for i in range(5)]
+            _.setdefault(top_category, {}).setdefault(category, []).append(
+                Product(top_category, category, product, int(quantity)))
 
         result =  []
-        for k,v in _.items():
-            result.append({"category": k, "product_ids": v})
+        for top, v in _.items():
+            for category, products in v.items():
+                result.append({"top": top,
+                               "category": category, 
+                               "product_ids": products})
 
         LOG.info("target order: %s", result)
         return result

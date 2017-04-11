@@ -50,87 +50,77 @@ class SeleniumBrowser():
                 selector, 20*settings.WAIT_INTERVAL)
             ) 
 
-    def login(self):
-        def _login(self):
-            result = False
-            try:
-                self.browser.get(settings.PTX_LOGIN_URL)
-                _user = self._wait_element("find_element_by_id", "username")
-                _user = self.browser.find_element_by_id("username")
-                _user.clear()
-                _user.send_keys(settings.PTX_USER)
-                LOG.info("login input username")
+    def _login(self):
+        result = False
+        try:
+            self.browser.get(settings.PTX_LOGIN_URL)
+            self._input_value("username", settings.PTX_USER)
+            self._input_value("password", settings.PTX_PASSWORD)
+            login = self.browser.find_elements_by_xpath("//p[@class='ibm-button-link-alternate']/a")
+            if len(login):
+                login = login[0]
+            else:
+                login = self.browser.find_element_by_id("signinbutton")
 
-                _pwd = self.browser.find_element_by_id("password")
-                _pwd.clear()
-                _pwd.send_keys(settings.PTX_PASSWORD)
-                LOG.info("login input password")
+            if not login:
+                raise Exception("selenium login page can't find login button") 
 
-                login = self.browser.find_elements_by_xpath("//p[@class='ibm-button-link-alternate']/a")
-                if len(login):
-                    login = login[0]
-                else:
-                    login = self.browser.find_element_by_id("signinbutton")
+            login.click()
 
-                if not login:
-                    raise Exception("selenium login page can't find login button") 
+            LOG.info("login button click, waiting...")
 
-                login.click()
-
-                LOG.info("login button click, waiting...")
-
-                # change store
-                for i in range(10):
-                    time.sleep(settings.WAIT_INTERVAL)
-                    LOG.info("wait login, current_url: %s", self.browser.current_url)
-                    result = self.browser.current_url.find("WelcomeView") > -1
-                    change_store = self.browser.current_url.find("ForceChangeStoreView") > -1
-
-                    if result:
-                        break
-                    
-                    if change_store:
-                        _select = self._wait_element("find_element_by_id", "selectStore")
-                        store = "US PC wholesale store"
-                        for option in _select.find_elements_by_tag_name('option'):
-                            if option.text == store:
-                                option.click()
-                                LOG.info("select store: %s",store)
-
-                                _continue = self._wait_element("find_element_by_name", "Submit.x")
-                                _continue.click()
-                                
-                                break
-                        time.sleep(settings.WAIT_INTERVAL)
-                        change_store_confirm = self.browser.current_url.find("ChangeStoreConfirmationView") > -1
-                        if change_store_confirm:
-                            self.browser.get(settings.PTX_WELCOME_URL)
-                
-                if not result:
-                    for i in range(10):
-                        time.sleep(settings.WAIT_INTERVAL)
-                        LOG.info("after change sotre, current_url: %s", self.browser.current_url)
-                        result = self.browser.current_url.find("WelcomeView") > -1
-                        if result:
-                            break
-                        else:
-                            pass 
+            # change store
+            for i in range(10):
+                time.sleep(settings.WAIT_INTERVAL)
+                result = self.browser.current_url.find("WelcomeView") > -1
+                change_store = self.browser.current_url.find("ForceChangeStoreView") > -1
 
                 if result:
-                    LOG.info("ptx login succeed")
+                    break
                 else:
-                    LOG.error("ptx login failed, current_url: %s", self.browser.current_url)
-            except Exception as ex:
-                LOG.exception("ptx login raise exception.")
+                    LOG.info("wait login, current_url: %s", self.browser.current_url)
+                
+                if change_store:
+                    _select = self._wait_element("find_element_by_id", "selectStore")
+                    store = "US PC wholesale store"
+                    for option in _select.find_elements_by_tag_name('option'):
+                        if option.text == store:
+                            option.click()
+                            LOG.info("select store: %s",store)
 
-            return result
+                            _continue = self._wait_element("find_element_by_name", "Submit.x")
+                            _continue.click()
+                            
+                            break
+                    time.sleep(settings.WAIT_INTERVAL)
+                    change_store_confirm = self.browser.current_url.find("ChangeStoreConfirmationView") > -1
+                    if change_store_confirm:
+                        self.browser.get(settings.PTX_WELCOME_URL)
+            
+            if not result:
+                for i in range(10):
+                    time.sleep(settings.WAIT_INTERVAL)
+                    LOG.info("after change sotre, current_url: %s", self.browser.current_url)
+                    result = self.browser.current_url.find("WelcomeView") > -1
+                    if result:
+                        break
 
+            if result:
+                LOG.info("ptx login succeed")
+            else:
+                LOG.error("ptx login failed, current_url: %s", self.browser.current_url)
+        except Exception as ex:
+            LOG.exception("ptx login raise exception.")
+
+        return result
+
+    def login(self):
         if self.authenticated:
             return True;
 
         for i in range(1):
             try:
-                if _login(self):
+                if self._login():
                     self.authenticated = True
                     break
             except:
@@ -138,12 +128,12 @@ class SeleniumBrowser():
         else:
             raise Exception("ptx login failed, break down")
 
-    def _go_category(self, category):
+    def _go_category(self, top, category):
         LOG.info("go to topcategory")
         self.browser.get(settings.TOP_CATEGORY_URL)
 
         top_category = self._wait_element("find_element_by_xpath", 
-                            '//strong[contains(text(), "PC notebooks")]')
+                            '//strong[contains(text(), "%s")]' % top)
         top_category.click()
 
         top = top_category.find_element_by_xpath(".//ancestor::li")
@@ -153,7 +143,7 @@ class SeleniumBrowser():
 
     def _add_carts(self, product_ids=None):
         for i in range(20):
-            time.sleep(settings.WAIT_INTERVAL*2)
+            time.sleep(settings.WAIT_INTERVAL)
             if self.browser.current_url.find("CategoryDisplay") > -1:
                 break
         else:
@@ -169,20 +159,15 @@ class SeleniumBrowser():
         go.click()
     
         for i in range(20):
-            time.sleep(settings.WAIT_INTERVAL*2)
+            time.sleep(settings.WAIT_INTERVAL)
             if self.browser.current_url.find("RetainUserSelectionCmd") > -1:
                 break
-
-        time.sleep(settings.WAIT_INTERVAL*2)
 
         max_page = 1
         jump_page = Select(self._wait_element("find_element_by_id", "jumpPage"))
         for option in jump_page.options:
             if int(option.text) > max_page:
                 max_page = int(option.text)
-
-        # TODO: max page, page size
-        LOG.info("max page: %s", max_page)
 
         add_cart_succeed = False
         cart_counter = 0
@@ -199,7 +184,7 @@ class SeleniumBrowser():
 
             for p in product_ids:
                 try:
-                    product = self.browser.find_element_by_id(p)
+                    product = self.browser.find_element_by_id(p.number)
                     product.click()
                     cart_counter += 1
                     add_cart_succeed = True
@@ -216,61 +201,66 @@ class SeleniumBrowser():
         add_to_cart = self._wait_element("find_element_by_name", "addToCartFlag.x")
         add_to_cart.click()
 
-    def _view_cart(self):
+    def _click_cart_checkout(self):
+        checkout = self._wait_element("find_element_by_id", "checkOut")
+        checkout.click() 
 
-        self._wait_element("find_element_by_id", "checkOut")
+    def _adjust_quantity(self, product_ids):
+        # TODO
+        import pdb; pdb.set_trace();
+        carts = self.browser.find_elements_by_xpath("")
 
-        checkout = self.browser.find_element_by_id("checkOut")
-        checkout.click()
-        
+    def _view_cart(self, product_ids): 
+        self._click_cart_checkout()  
+        self._adjust_quantity(product_ids) 
+        self._click_cart_checkout() 
+
         continue_submit = self.browser.find_element_by_name("ibm-continue")
-        # self.browser.save_screenshot("/path/to/file")
         continue_submit.click()
+        # make submit success
+        pass
 
-    def _input_logistic(self):
-        def _input_value(self, ele_id, value):
-            _input = self._wait_element("find_element_by_id",ele_id)
-            _input.clear()
-            _input.send_keys(value)
-            LOG.info("input info: %s, value: %s", ele_id, value)
+    def _input_value(self, ele_id, value):
+        _input = self._wait_element("find_element_by_id", ele_id)
+        _input.clear()
+        _input.send_keys(value)
+        LOG.info("input info: %s, value: %s", ele_id, value)
 
-        def _select_by_text(self, ele_id, text):
-            _select = Select(self._wait_element("find_element_by_id", ele_id))
-            options = _select.options 
-            LOG.info("select %s option count: %s", ele_id, len(options))
-            if options:
-                _select.select_by_visible_text(text)
-                LOG.info("input checkout select: %s, value: %s",
-                                                        ele_id, text)
-            else:
-                LOG.error("input checkout select: %s, no option!", ele_id)
+    def _select_by_text(self, ele_id, text):
+        _select = Select(self._wait_element("find_element_by_id", ele_id))
+        options = _select.options 
+        LOG.info("select %s option count: %s", ele_id, len(options))
+        if options:
+            _select.select_by_visible_text(text)
+            LOG.info("input checkout select: %s, value: %s",
+                                                    ele_id, text)
+        else:
+            LOG.error("input checkout select: %s, no option!", ele_id)
 
-            return _select.first_selected_option
+        return _select.first_selected_option
 
+    def _input_logistic(self): 
         input_fields = settings.CHECKOUT_INPUT_FIELDS
         select_fields = settings.CHECKOUT_SELECT_FIELDS 
 
         self._wait_element("find_element_by_id", "sp_email1")
 
         for element, value in input_fields:
-            _input_value(self, element, value)
+            self._input_value(element, value)
 
         for element, txt in select_fields:
             for i in range(5):
-                op = _select_by_text(self, element, txt)
+                op = self._select_by_text(element, txt)
                 if op and op.text == txt:
                     break
-                time.sleep(settings.WAIT_INTERVAL)
 
         time.sleep(settings.WAIT_INTERVAL)
         continue_submit = self.browser.find_element_by_name("OrderReviewCmd.x")
-        #self.browser.save_screenshot("/tmp/checkout1-2.jpg")
         continue_submit.click()
 
     def _submit(self):
         continue_submit = self._wait_element("find_element_by_name", "OrderSubmitCmd.x")
-        #self.browser.save_screenshot("/tmp/checkout2-2.jpg")
-        continue_submit.click()
+        #continue_submit.click()
         time.sleep(settings.WAIT_INTERVAL)
 
     def auto_order(self, target=None):
@@ -279,16 +269,17 @@ class SeleniumBrowser():
 
         if self.authenticated:
             for index, t in enumerate(target):
-                self._go_category(category=t.get("category"))
+                self._go_category(top=t.get("top"), category=t.get("category"))
                 LOG.info("get category done [1/5]")
 
                 try:
                     self._add_carts(product_ids=t.get("product_ids"))
                     LOG.info("add carts done [2/5]")
                 except:
+                    LOG.info("no carts break [2/5]")
                     continue
                 
-                self._view_cart()
+                self._view_cart(product_ids=t.get("product_ids"))
                 LOG.info("view cart done [3/5]")
 
                 self._input_logistic()

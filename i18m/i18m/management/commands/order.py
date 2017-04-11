@@ -9,8 +9,8 @@ from optparse import make_option
 from django.conf import settings
 from django.core.management import BaseCommand
 
-from .browser import SeleniumBrowser
-from .target import OrderTarget
+from ._browser import SeleniumBrowser
+from ._target import OrderTarget
 
 LOG = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class Command(BaseCommand):
         t = OrderTarget(path=settings.EXCEL_PATH)
         return t
 
-    def run(self, target=None):
+    def auto_order(self, target=None):
         if not target:
             return False
 
@@ -41,8 +41,7 @@ class Command(BaseCommand):
             return True
         else:
             return False
-        
-   
+         
     def handle(self, *args, **kwargs):
         LOG.info("%s%s%s", "#"*15, "ptx.start", "#"*15)
         begin = datetime.datetime.now()
@@ -50,7 +49,7 @@ class Command(BaseCommand):
         if self._check_time():
             try:
                 target = self._prepare_target()
-                succeed = self.run(target.construct())
+                succeed = self.auto_order(target.construct())
                 target.mark_complete()
             except Exception as ex:
                 LOG.exception("ptx.run raise exception.")
